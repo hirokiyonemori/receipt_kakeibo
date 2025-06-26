@@ -135,7 +135,7 @@ class _ReceiptOCRPageState extends State<ReceiptOCRPage> {
       final inputImage = InputImage.fromFilePath(pickedFile.path);
       print('✅ InputImage作成完了');
       
-      final textRecognizer = TextRecognizer(script: TextRecognitionScript.japanese);
+      final textRecognizer = TextRecognizer();
       print('✅ TextRecognizer作成完了');
       
       final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
@@ -230,7 +230,7 @@ class _ReceiptOCRPageState extends State<ReceiptOCRPage> {
 
       print('🔍 OCR処理開始');
       final inputImage = InputImage.fromFilePath(pickedFile.path);
-      final textRecognizer = TextRecognizer(script: TextRecognitionScript.japanese);
+      final textRecognizer = TextRecognizer();
       final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
 
       String text = recognizedText.text;
@@ -488,18 +488,20 @@ class _ReceiptOCRPageState extends State<ReceiptOCRPage> {
         child: Column(
           children: [
             // Image capture buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            Wrap(
+              spacing: 8.0,
+              runSpacing: 8.0,
+              alignment: WrapAlignment.center,
               children: [
                 ElevatedButton.icon(
                   onPressed: _getImageAndRecognizeText,
                   icon: Icon(Icons.camera_alt),
-                  label: Text('カメラで撮影'),
+                  label: Text('カメラ'),
                 ),
                 ElevatedButton.icon(
                   onPressed: _pickImageFromGallery,
                   icon: Icon(Icons.photo_library),
-                  label: Text('ギャラリーから選択'),
+                  label: Text('ギャラリー'),
                 ),
               ],
             ),
@@ -508,7 +510,7 @@ class _ReceiptOCRPageState extends State<ReceiptOCRPage> {
             ElevatedButton.icon(
               onPressed: _testCameraOnly,
               icon: Icon(Icons.camera),
-              label: Text('カメラテスト（OCRなし）'),
+              label: Text('カメラテスト'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
                 foregroundColor: Colors.white,
@@ -519,7 +521,7 @@ class _ReceiptOCRPageState extends State<ReceiptOCRPage> {
             ElevatedButton.icon(
               onPressed: _safeCameraCapture,
               icon: Icon(Icons.camera_alt),
-              label: Text('安全なカメラテスト'),
+              label: Text('安全カメラ'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
                 foregroundColor: Colors.white,

@@ -226,7 +226,7 @@ class _OCRScreenState extends State<OCRScreen> {
 
     if (image != null) {
       final inputImage = InputImage.fromFilePath(image.path);
-      final textRecognizer = TextRecognizer(script: TextRecognitionScript.japanese);
+      final textRecognizer = TextRecognizer(); // デフォルトのテキスト認識を使用
       final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
       String rawText = recognizedText.text;
 
@@ -248,7 +248,7 @@ class _OCRScreenState extends State<OCRScreen> {
 
     if (image != null) {
       final inputImage = InputImage.fromFilePath(image.path);
-      final textRecognizer = TextRecognizer(script: TextRecognitionScript.japanese);
+      final textRecognizer = TextRecognizer(); // デフォルトのテキスト認識を使用
       final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
       String rawText = recognizedText.text;
 
@@ -313,18 +313,20 @@ class _OCRScreenState extends State<OCRScreen> {
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    Wrap(
+                      spacing: 8.0,
+                      runSpacing: 8.0,
+                      alignment: WrapAlignment.center,
                       children: [
                         ElevatedButton.icon(
                           onPressed: _pickImage,
                           icon: Icon(Icons.camera_alt),
-                          label: Text('カメラで撮影'),
+                          label: Text('カメラ'),
                         ),
                         ElevatedButton.icon(
                           onPressed: _pickImageFromGallery,
                           icon: Icon(Icons.photo_library),
-                          label: Text('ギャラリーから選択'),
+                          label: Text('ギャラリー'),
                         ),
                       ],
                     ),
@@ -421,7 +423,7 @@ class _OCRScreenState extends State<OCRScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _canShowReward() ? Colors.blue : Colors.grey,
                       ),
-                      child: Text(_canShowReward() ? '広告解除（1日1回）' : '広告解除（1日1回）'),
+                      child: Text(_canShowReward() ? '広告解除' : '広告解除'),
                     ),
                     SizedBox(height: 16),
                     // 抽出されたテキストの表示
