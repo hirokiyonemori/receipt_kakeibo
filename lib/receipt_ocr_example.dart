@@ -318,36 +318,105 @@ class _ReceiptOCRPageState extends State<ReceiptOCRPage> {
   }
 
   String? _extractDate(String text) {
-    // Enhanced date extraction for Japanese receipts
-    final patterns = [
-      RegExp(r'\d{4}[-/.年]\d{1,2}[-/.月]\d{1,2}'), // 2024/01/15 or 2024年1月15日
-      RegExp(r'\d{1,2}[-/.月]\d{1,2}'), // 1/15 or 1月15日
-      RegExp(r'\d{4}[-/]\d{1,2}[-/]\d{1,2}'), // 2024-01-15
+    // 日本のレシートでよく見られる日付パターンを複数定義
+    final datePatterns = [
+      // 2024年1月15日 形式
+      RegExp(r'\d{4}年\d{1,2}月\d{1,2}日'),
+      // 2024/01/15 形式
+      RegExp(r'\d{4}[/]\d{1,2}[/]\d{1,2}'),
+      // 2024-01-15 形式
+      RegExp(r'\d{4}[-]\d{1,2}[-]\d{1,2}'),
+      // 2024.01.15 形式
+      RegExp(r'\d{4}[.]\d{1,2}[.]\d{1,2}'),
+      // 1月15日 形式（年なし）
+      RegExp(r'\d{1,2}月\d{1,2}日'),
+      // 1/15 形式（年なし）
+      RegExp(r'\d{1,2}[/]\d{1,2}'),
+      // 2024年1月 形式（日なし）
+      RegExp(r'\d{4}年\d{1,2}月'),
+      // 日付っぽい文字列（より緩い条件）
+      RegExp(r'\d{4}[-/.年]\d{1,2}[-/.月]\d{1,2}'),
     ];
     
-    for (var pattern in patterns) {
+    for (var pattern in datePatterns) {
       final match = pattern.firstMatch(text);
       if (match != null) {
-        return match.group(0);
+        String dateStr = match.group(0)!;
+        
+        // 年がない場合は現在の年を追加
+        if (!dateStr.contains('年') && !RegExp(r'\d{4}').hasMatch(dateStr)) {
+          final currentYear = DateTime.now().year;
+          if (dateStr.contains('月') && dateStr.contains('日')) {
+            dateStr = '${currentYear}年$dateStr';
+          } else if (dateStr.contains('/')) {
+            final parts = dateStr.split('/');
+            if (parts.length == 2) {
+              dateStr = '${currentYear}/${parts[0]}/${parts[1]}';
+            }
+          }
+        }
+        
+        return dateStr;
       }
     }
-    return null;
+    
+    // 日付が見つからない場合は現在の日付を返す
+    final now = DateTime.now();
+    return '${now.year}年${now.month}月${now.day}日';
   }
 
   String? _extractAmount(String text) {
-    // Enhanced amount extraction for Japanese receipts
-    final patterns = [
-      RegExp(r'(¥|￥)?\s?(\d{1,3}(,\d{3})+|\d+)(円)?'), // ¥1,000 or 1000円
-      RegExp(r'合計\s*[:：]\s*(¥|￥)?\s?(\d{1,3}(,\d{3})+|\d+)(円)?'), // 合計: ¥1,000
-      RegExp(r'税込\s*[:：]\s*(¥|￥)?\s?(\d{1,3}(,\d{3})+|\d+)(円)?'), // 税込: ¥1,000
+    // 日本のレシートでよく見られる金額パターンを複数定義
+    final amountPatterns = [
+      // 合計: ¥1,000 形式
+      RegExp(r'合計\s*[:：]\s*(¥|￥)?\s*(\d{1,3}(,\d{3})+|\d+)(円)?'),
+      // 税込: ¥1,000 形式
+      RegExp(r'税込\s*[:：]\s*(¥|￥)?\s*(\d{1,3}(,\d{3})+|\d+)(円)?'),
+      // お支払い: ¥1,000 形式
+      RegExp(r'お支払い\s*[:：]\s*(¥|￥)?\s*(\d{1,3}(,\d{3})+|\d+)(円)?'),
+      // ご請求: ¥1,000 形式
+      RegExp(r'ご請求\s*[:：]\s*(¥|￥)?\s*(\d{1,3}(,\d{3})+|\d+)(円)?'),
+      // 合計金額: ¥1,000 形式
+      RegExp(r'合計金額\s*[:：]\s*(¥|￥)?\s*(\d{1,3}(,\d{3})+|\d+)(円)?'),
+      // 総計: ¥1,000 形式
+      RegExp(r'総計\s*[:：]\s*(¥|￥)?\s*(\d{1,3}(,\d{3})+|\d+)(円)?'),
+      // 金額: ¥1,000 形式
+      RegExp(r'金額\s*[:：]\s*(¥|￥)?\s*(\d{1,3}(,\d{3})+|\d+)(円)?'),
+      // ¥1,000円 形式（円記号あり）
+      RegExp(r'(¥|￥)\s*(\d{1,3}(,\d{3})+|\d+)(円)?'),
+      // 1,000円 形式（円記号なし）
+      RegExp(r'(\d{1,3}(,\d{3})+|\d+)(円)'),
+      // 単純な数字（最後の手段）
+      RegExp(r'(\d{1,3}(,\d{3})+|\d{3,})'),
     ];
     
-    for (var pattern in patterns) {
+    for (var pattern in amountPatterns) {
       final match = pattern.firstMatch(text);
       if (match != null) {
-        return match.group(0);
+        String amountStr = match.group(0)!;
+        
+        // 数字以外の文字を除去して数字のみを抽出
+        String numbersOnly = amountStr.replaceAll(RegExp(r'[^\d]'), '');
+        
+        // 3桁以上の数字の場合のみ有効とする
+        if (numbersOnly.length >= 3) {
+          // 金額として適切な範囲かチェック（100円〜1,000,000円）
+          int amount = int.tryParse(numbersOnly) ?? 0;
+          if (amount >= 100 && amount <= 1000000) {
+            // カンマ区切りでフォーマット
+            if (amount >= 1000) {
+              return '¥${amount.toString().replaceAllMapped(
+                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                (Match m) => '${m[1]},'
+              ).replaceAll(RegExp(r',$'), '')}';
+            } else {
+              return '¥$amount';
+            }
+          }
+        }
       }
     }
+    
     return null;
   }
 
