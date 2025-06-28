@@ -43,8 +43,10 @@ Future<void> requestPermissions() async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // AdMobの初期化
-  await MobileAds.instance.initialize();
+  // AdMobの初期化（Androidのみ）
+  if (Platform.isAndroid) {
+    await MobileAds.instance.initialize();
+  }
   
   runApp(MaterialApp(
     home: OCRScreen(),
@@ -68,11 +70,11 @@ class _OCRScreenState extends State<OCRScreen> {
   final TextEditingController _storeController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
   
-  // AdMobバナー広告
+  // AdMobバナー広告（Androidのみ）
   BannerAd? _bannerAd;
   bool _isAdLoaded = false;
   
-  // AdMobリワード広告
+  // AdMobリワード広告（Androidのみ）
   RewardedAd? _rewardedAd;
   bool _isRewardedAdLoaded = false;
   int _registrationCount = 0;
@@ -83,15 +85,19 @@ class _OCRScreenState extends State<OCRScreen> {
   void initState() {
     super.initState();
     requestPermissions();
-    _loadBannerAd();
-    _loadRewardedAd();
+    if (Platform.isAndroid) {
+      _loadBannerAd();
+      _loadRewardedAd();
+    }
     _loadRegistrationCount();
     _loadLastRewardShownDate();
   }
 
   void _loadBannerAd() {
+    if (!Platform.isAndroid) return;
+    
     _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-8148356110096114/3236336102',
+      adUnitId: 'ca-app-pub-8148356110096114/3236336102', // 本番用広告ユニットID
       size: AdSize.banner,
       request: AdRequest(),
       listener: BannerAdListener(
@@ -110,12 +116,9 @@ class _OCRScreenState extends State<OCRScreen> {
   }
 
   void _loadRewardedAd() {
-    String adUnitId;
-    if (Platform.isAndroid) {
-      adUnitId = 'ca-app-pub-8148356110096114/8146446657';
-    } else {
-      adUnitId = 'ca-app-pub-8148356110096114/6921813131';
-    }
+    if (!Platform.isAndroid) return;
+    
+    String adUnitId = 'ca-app-pub-8148356110096114/8146446657'; // 本番用リワード広告ユニットID
 
     RewardedAd.load(
       adUnitId: adUnitId,
@@ -147,7 +150,7 @@ class _OCRScreenState extends State<OCRScreen> {
   }
 
   void _showRewardedAd() {
-    if (_rewardedAd == null || !_isRewardedAdLoaded) {
+    if (!Platform.isAndroid || _rewardedAd == null || !_isRewardedAdLoaded) {
       return;
     }
 
@@ -189,6 +192,8 @@ class _OCRScreenState extends State<OCRScreen> {
   }
 
   void _showRewardedAdDialog() {
+    if (!Platform.isAndroid) return;
+    
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -215,8 +220,10 @@ class _OCRScreenState extends State<OCRScreen> {
 
   @override
   void dispose() {
-    _bannerAd?.dispose();
-    _rewardedAd?.dispose();
+    if (Platform.isAndroid) {
+      _bannerAd?.dispose();
+      _rewardedAd?.dispose();
+    }
     super.dispose();
   }
 
@@ -273,31 +280,33 @@ class _OCRScreenState extends State<OCRScreen> {
   }
 
   Future<void> _loadLastRewardShownDate() async {
+    if (!Platform.isAndroid) return;
+    
     final prefs = await SharedPreferences.getInstance();
-    final lastShownTimestamp = prefs.getInt('last_reward_shown_timestamp');
-    if (lastShownTimestamp != null) {
-      setState(() {
-        _lastRewardShownDate = DateTime.fromMillisecondsSinceEpoch(lastShownTimestamp);
-      });
+    final dateString = prefs.getString('last_reward_shown_date');
+    if (dateString != null) {
+      _lastRewardShownDate = DateTime.parse(dateString);
     }
   }
 
   Future<void> _saveLastRewardShownDate() async {
+    if (!Platform.isAndroid) return;
+    
     final prefs = await SharedPreferences.getInstance();
-    final now = DateTime.now();
-    await prefs.setInt('last_reward_shown_timestamp', now.millisecondsSinceEpoch);
-    setState(() {
-      _lastRewardShownDate = now;
-    });
+    await prefs.setString('last_reward_shown_date', DateTime.now().toIso8601String());
+    _lastRewardShownDate = DateTime.now();
   }
 
   bool _canShowReward() {
+    if (!Platform.isAndroid) return false;
+    
     if (_lastRewardShownDate == null) {
       return true;
     }
+    
     final now = DateTime.now();
     final difference = now.difference(_lastRewardShownDate!);
-    return difference.inDays >= 1;
+    return difference.inHours >= 24;
   }
 
   @override
@@ -376,7 +385,7 @@ class _OCRScreenState extends State<OCRScreen> {
                             );
 
                             // 3回ごとにダイアログ表示してリワード広告を表示
-                            if (newCount % REWARD_INTERVAL == 0 && _canShowReward()) {
+                            if (Platform.isAndroid && newCount % REWARD_INTERVAL == 0 && _canShowReward()) {
                               _showRewardedAdDialog();
                             }
 
@@ -406,13 +415,13 @@ class _OCRScreenState extends State<OCRScreen> {
                     SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
-                        if (_canShowReward()) {
+                        if (Platform.isAndroid && _canShowReward()) {
                           _showRewardedAdDialog();
-                        } else {
+                        } else if (Platform.isAndroid) {
                           final remainingHours = 24 - DateTime.now().difference(_lastRewardShownDate!).inHours;
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('広告解除は${remainingHours}時間後に再度可能です'),
+                              content: Text('⏰ 次の広告まで${remainingHours}時間待ちです'),
                               backgroundColor: Colors.orange,
                             ),
                           );
@@ -443,8 +452,8 @@ class _OCRScreenState extends State<OCRScreen> {
                 ),
               ),
             ),
-            // バナー広告
-            if (_isAdLoaded)
+            // バナー広告（Androidのみ）
+            if (Platform.isAndroid && _isAdLoaded)
               Container(
                 width: _bannerAd!.size.width.toDouble(),
                 height: _bannerAd!.size.height.toDouble(),

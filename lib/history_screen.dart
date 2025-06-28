@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'dart:io' show Platform;
 import 'database_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -18,7 +19,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void initState() {
     super.initState();
     _loadExpenses();
-    _loadBannerAd();
+    if (Platform.isAndroid) {
+      _loadBannerAd();
+    }
     _loadRegistrationCount();
   }
 
@@ -31,8 +34,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   void _loadBannerAd() {
+    if (!Platform.isAndroid) return;
+    
     _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-3940256099942544/6300978111', // テスト用ID
+      adUnitId: 'ca-app-pub-8148356110096114/3236336102', // 本番用ID
       size: AdSize.banner,
       request: AdRequest(),
       listener: BannerAdListener(
@@ -105,8 +110,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     },
                   ),
           ),
-          // バナー広告
-          if (_isAdLoaded)
+          // バナー広告（Androidのみ）
+          if (Platform.isAndroid && _isAdLoaded)
             Container(
               width: _bannerAd!.size.width.toDouble(),
               height: _bannerAd!.size.height.toDouble(),
@@ -119,7 +124,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   void dispose() {
-    _bannerAd?.dispose();
+    if (Platform.isAndroid) {
+      _bannerAd?.dispose();
+    }
     super.dispose();
   }
 } 
