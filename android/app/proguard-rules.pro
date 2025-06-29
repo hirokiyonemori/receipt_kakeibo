@@ -33,7 +33,53 @@
 -keep class com.google.android.gms.** { *; }
 -keep class com.google.firebase.** { *; }
 
+# AdMob rules
+-keep class com.google.android.gms.ads.** { *; }
+-keep class com.google.ads.** { *; }
+-keep class com.google.android.gms.common.** { *; }
+-keep class com.google.android.gms.measurement.** { *; }
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.internal.** { *; }
+-keep class com.google.android.gms.appset.** { *; }
+-keep class com.google.android.gms.tasks.** { *; }
+-keep class com.google.android.gms.dynamic.** { *; }
+-keep class com.google.android.gms.dynamite.** { *; }
+-keep class com.google.android.gms.flags.** { *; }
+-keep class com.google.android.gms.location.** { *; }
+-keep class com.google.android.gms.vision.** { *; }
+
+# MLKit Text Recognition specific rules
+-keep class com.google.mlkit.vision.** { *; }
+-keep class com.google.mlkit.common.** { *; }
+-keep class com.google.mlkit.nl.** { *; }
+-keep class com.google.mlkit.vision.text.** { *; }
+-keep class com.google.mlkit.vision.text.japanese.** { *; }
+-keep class com.google.mlkit.vision.text.latin.** { *; }
+-keep class com.google.mlkit.vision.text.chinese.** { *; }
+-keep class com.google.mlkit.vision.text.dev.** { *; }
+-keep class com.google.mlkit.vision.text.internal.** { *; }
+
 # Keep native methods
 -keepclasseswithmembernames class * {
     native <methods>;
+}
+
+# Keep Serializable classes
+-keepclassmembers class * implements java.io.Serializable {
+    static final long serialVersionUID;
+    private static final java.io.ObjectStreamField[] serialPersistentFields;
+    private void writeObject(java.io.ObjectOutputStream);
+    private void readObject(java.io.ObjectInputStream);
+    java.lang.Object writeReplace();
+    java.lang.Object readResolve();
+}
+
+# Keep Parcelable classes
+-keep class * implements android.os.Parcelable {
+    public static final android.os.Parcelable$Creator *;
+}
+
+# Keep R classes
+-keep class **.R$* {
+    public static <fields>;
 } 
