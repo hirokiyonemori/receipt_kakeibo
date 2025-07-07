@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
@@ -11,6 +10,7 @@ import 'history_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'receipt_edit_screen.dart';
+
 
 String extractAmount(String text) {
   final yenPattern = RegExp(r'(¥|￥)?\s?(\d{1,3}(,\d{3})+|\d+)(円)?');
@@ -40,13 +40,13 @@ Future<void> requestPermissions() async {
   await Permission.photos.request();
 }
 
+
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // AdMobの初期化（Androidのみ）
-  if (Platform.isAndroid) {
-    await MobileAds.instance.initialize();
-  }
+  // AdMobの初期化
+  await MobileAds.instance.initialize();
   
   runApp(MaterialApp(
     home: OCRScreen(),
@@ -85,19 +85,17 @@ class _OCRScreenState extends State<OCRScreen> {
   void initState() {
     super.initState();
     requestPermissions();
-    if (Platform.isAndroid) {
-      _loadBannerAd();
-      _loadRewardedAd();
-    }
+    _loadBannerAd();
+    _loadRewardedAd();
     _loadRegistrationCount();
     _loadLastRewardShownDate();
   }
 
   void _loadBannerAd() {
-    if (!Platform.isAndroid) return;
-    
     _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-8148356110096114/3236336102', // 本番用広告ユニットID
+      adUnitId: Platform.isAndroid 
+        ? 'ca-app-pub-8148356110096114/3236336102' // Android用広告ユニットID
+        : 'ca-app-pub-8148356110096114/3236336102', // iOS用広告ユニットID（同じIDを使用）
       size: AdSize.banner,
       request: AdRequest(),
       listener: BannerAdListener(
@@ -116,9 +114,9 @@ class _OCRScreenState extends State<OCRScreen> {
   }
 
   void _loadRewardedAd() {
-    if (!Platform.isAndroid) return;
-    
-    String adUnitId = 'ca-app-pub-8148356110096114/8146446657'; // 本番用リワード広告ユニットID
+    String adUnitId = Platform.isAndroid 
+      ? 'ca-app-pub-8148356110096114/8146446657' // Android用リワード広告ユニットID
+      : 'ca-app-pub-8148356110096114/8146446657'; // iOS用リワード広告ユニットID（同じIDを使用）
 
     RewardedAd.load(
       adUnitId: adUnitId,
@@ -150,7 +148,7 @@ class _OCRScreenState extends State<OCRScreen> {
   }
 
   void _showRewardedAd() {
-    if (!Platform.isAndroid || _rewardedAd == null || !_isRewardedAdLoaded) {
+    if (_rewardedAd == null || !_isRewardedAdLoaded) {
       return;
     }
 
@@ -192,7 +190,6 @@ class _OCRScreenState extends State<OCRScreen> {
   }
 
   void _showRewardedAdDialog() {
-    if (!Platform.isAndroid) return;
     
     showDialog(
       context: context,
@@ -232,14 +229,14 @@ class _OCRScreenState extends State<OCRScreen> {
     final XFile? image = await _picker.pickImage(source: ImageSource.camera);
 
     if (image != null) {
-      final inputImage = InputImage.fromFilePath(image.path);
-      final textRecognizer = TextRecognizer(script: TextRecognitionScript.japanese);
-      final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
-      String rawText = recognizedText.text;
+      // final inputImage = InputImage.fromFilePath(image.path);
+      // final textRecognizer = TextRecognizer(script: TextRecognitionScript.japanese);
+      // final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
+      // String rawText = recognizedText.text;
 
       setState(() {
         _image = File(image.path);
-        extractedText = rawText;
+        extractedText = '';
 
         // 抽出したテキストから情報を取り出す
         _dateController.text = extractDate(extractedText);
@@ -254,14 +251,14 @@ class _OCRScreenState extends State<OCRScreen> {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
 
     if (image != null) {
-      final inputImage = InputImage.fromFilePath(image.path);
-      final textRecognizer = TextRecognizer(script: TextRecognitionScript.japanese);
-      final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
-      String rawText = recognizedText.text;
+      // final inputImage = InputImage.fromFilePath(image.path);
+      // final textRecognizer = TextRecognizer(script: TextRecognitionScript.japanese);
+      // final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
+      // String rawText = recognizedText.text;
 
       setState(() {
         _image = File(image.path);
-        extractedText = rawText;
+        extractedText = '';
 
         // 抽出したテキストから情報を取り出す
         _dateController.text = extractDate(extractedText);

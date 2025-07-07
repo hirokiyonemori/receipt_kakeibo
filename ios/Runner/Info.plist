@@ -55,5 +55,7 @@
 	<string>レシート画像を保存するために使用します</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>カメラ撮影時に音声を録音するために使用します</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>このアプリでは広告の最適化とパーソナライズされた体験を提供するためにユーザーの識別情報を利用します。</string>
 </dict>
 </plist>
