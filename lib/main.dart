@@ -59,6 +59,36 @@ class _OCRScreenState extends State<OCRScreen> {
   final TextEditingController _storeController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
 
+  Future<bool> _ensurePermission(
+    Permission permission,
+    String deniedMessage,
+  ) async {
+    final status = await permission.status;
+    if (status.isGranted) {
+      return true;
+    }
+
+    final result = await permission.request();
+    if (result.isGranted) {
+      return true;
+    }
+
+    if (result.isPermanentlyDenied) {
+      await openAppSettings();
+    }
+
+    if (mounted) {
+      _showSnackBar(deniedMessage);
+    }
+    return false;
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   void initState() {
     super.initState();
@@ -66,37 +96,55 @@ class _OCRScreenState extends State<OCRScreen> {
   }
 
   Future<void> _pickImage() async {
-    final ImagePicker _picker = ImagePicker();
-    final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+    if (!await _ensurePermission(Permission.camera, 'カメラ権限が必要です')) {
+      return;
+    }
 
-    if (image != null) {
-      final inputImage = InputImage.fromFilePath(image.path);
-      final textRecognizer = TextRecognizer(script: TextRecognitionScript.japanese);
-      final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
-      String rawText = recognizedText.text;
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.camera);
 
-      setState(() {
-        _image = File(image.path);
-        extractedText = rawText;
+      if (image == null) {
+        _showSnackBar('画像が選択されませんでした');
+        return;
+      }
 
-        // 抽出したテキストから情報を取り出す
-        _dateController.text = extractDate(extractedText);
-        _storeController.text = extractStoreName(extractedText);
-        _amountController.text = extractAmount(extractedText);
-      });
+      await _handleImage(image);
+    } catch (e) {
+      _showSnackBar('カメラ起動に失敗しました: $e');
     }
   }
 
   Future<void> _pickImageFromGallery() async {
-    final ImagePicker _picker = ImagePicker();
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (!await _ensurePermission(Permission.photos, 'フォトライブラリ権限が必要です')) {
+      return;
+    }
 
-    if (image != null) {
-      final inputImage = InputImage.fromFilePath(image.path);
-      final textRecognizer = TextRecognizer(script: TextRecognitionScript.japanese);
-      final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
-      String rawText = recognizedText.text;
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
+      if (image == null) {
+        _showSnackBar('画像が選択されませんでした');
+        return;
+      }
+
+      await _handleImage(image);
+    } catch (e) {
+      _showSnackBar('画像の取得に失敗しました: $e');
+    }
+  }
+
+  Future<void> _handleImage(XFile image) async {
+    final inputImage = InputImage.fromFilePath(image.path);
+    final textRecognizer = TextRecognizer(script: TextRecognitionScript.japanese);
+
+    try {
+      final RecognizedText recognizedText =
+          await textRecognizer.processImage(inputImage);
+      final String rawText = recognizedText.text;
+
+      if (!mounted) return;
       setState(() {
         _image = File(image.path);
         extractedText = rawText;
@@ -106,6 +154,10 @@ class _OCRScreenState extends State<OCRScreen> {
         _storeController.text = extractStoreName(extractedText);
         _amountController.text = extractAmount(extractedText);
       });
+    } catch (e) {
+      _showSnackBar('文字認識に失敗しました: $e');
+    } finally {
+      await textRecognizer.close();
     }
   }
 
