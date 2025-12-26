@@ -72,7 +72,7 @@ class _ReceiptEditScreenState extends State<ReceiptEditScreen> {
                         ),
                       ),
                       SizedBox(height: 16),
-                      TextField(
+                      TextFormField(
                         controller: _storeController,
                         decoration: InputDecoration(
                           labelText: '🏪 店舗名',
@@ -87,7 +87,7 @@ class _ReceiptEditScreenState extends State<ReceiptEditScreen> {
                         },
                       ),
                       SizedBox(height: 16),
-                      TextField(
+                      TextFormField(
                         controller: _amountController,
                         decoration: InputDecoration(
                           labelText: '💴 金額',
@@ -100,14 +100,14 @@ class _ReceiptEditScreenState extends State<ReceiptEditScreen> {
                           if (value == null || value.trim().isEmpty) {
                             return '金額を入力してください';
                           }
-                          if (int.tryParse(value.replaceAll(RegExp(r'[^\d]'), '')) == null) {
+                          if (int.tryParse(value.replaceAll(RegExp(r'[^0-9]'), '')) == null) {
                             return '有効な金額を入力してください';
                           }
                           return null;
                         },
                       ),
                       SizedBox(height: 16),
-                      TextField(
+                      TextFormField(
                         controller: _dateController,
                         decoration: InputDecoration(
                           labelText: '📅 日付',
